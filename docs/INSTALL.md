@@ -88,7 +88,9 @@ python3 scripts/install.py --configure-deepseek --dsh-home /path/to/harness
 
 This manages a clearly marked DeepSeek section in `$DSH_HOME/AGENTS.md`, leaving all other
 content untouched. Each participant has its own delimited section and markers, so the two
-can be installed and removed independently.
+can be installed and removed independently. Repeated configuration retains previously
+registered participants and uses their recorded homes when home flags are omitted.
+Uninstallation removes every managed section recorded by the installation.
 
 This installs runtime files in `~/.local/share/codex-peer-bridge` and adds a clearly
 marked section to `$CODEX_HOME/AGENTS.md` (normally `~/.codex/AGENTS.md`). If a global

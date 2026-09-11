@@ -103,9 +103,9 @@ def main():
     p.add_argument('--configure-codex', action='store_true', help='install managed global guidance and per-session registration')
     p.add_argument('--configure-deepseek', action='store_true',
                    help='install managed harness guidance for DeepSeek (DSH) sessions')
-    p.add_argument('--codex-home', type=Path, default=Path(os.environ.get('CODEX_HOME', str(Path.home()/'.codex'))))
+    p.add_argument('--codex-home', type=Path)
     p.add_argument('--dsh-home', type=Path,
-                   default=Path(os.environ.get('DSH_HOME', str(Path.home()/'.dsh'))),
+                   default=None,
                    help='harness home whose AGENTS.md receives the managed DeepSeek section')
     p.add_argument('--name', default='codex-peer')
     p.add_argument('--repo', default=os.getcwd())
@@ -123,6 +123,15 @@ def main():
     if not a.thread and not (a.configure_codex or a.configure_deepseek):
         p.error('--thread, --configure-codex or --configure-deepseek is required')
     if a.configure_codex or a.configure_deepseek:
+        config_path = a.prefix/'install.json'
+        previous = json.loads(config_path.read_text()) if config_path.exists() else {}
+        a.codex_home = a.codex_home or Path(previous.get('codex_home') or
+                                          os.environ.get('CODEX_HOME', str(Path.home()/'.codex')))
+        a.dsh_home = a.dsh_home or Path(previous.get('dsh_home') or
+                                      os.environ.get('DSH_HOME', str(Path.home()/'.dsh')))
+        participants = set(previous.get('participants', ['codex'] if previous else []))
+        participants.update(name for name, chosen in (('codex', a.configure_codex),
+                                                      ('deepseek', a.configure_deepseek)) if chosen)
         os.umask(0o077)
         a.prefix.mkdir(parents=True,exist_ok=True)
         source = Path(__file__).resolve().parent.parent
@@ -143,11 +152,11 @@ def main():
             dsh_home=str(a.dsh_home.expanduser().resolve()),
             # Which managed sections this installation wrote, so uninstall removes
             # exactly those and leaves any other participant's guidance alone.
-            participants=[name for name, chosen in (('codex', a.configure_codex),
-                                                    ('deepseek', a.configure_deepseek)) if chosen],
-            dsh_url=os.environ.get('DSH_WEB_URL'),
+            participants=sorted(participants),
+            dsh_url=(os.environ.get('DSH_WEB_URL', previous.get('dsh_url'))
+                     if a.configure_deepseek else previous.get('dsh_url')),
             dsh_credentials=(str(a.dsh_home.expanduser().resolve()/'.credentials.yaml')
-                             if os.environ.get('DSH_HOME') else None))))
+                             if a.configure_deepseek else previous.get('dsh_credentials')))))
         print('Installed runtime:',a.prefix)
         if guidance is not None:
             print('Managed Codex guidance:',guidance)

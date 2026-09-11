@@ -171,7 +171,8 @@ class InstallRecordTests(unittest.TestCase):
             env.pop(name, None)
         for home in ('codex', 'dsh'):
             (root / home).mkdir(parents=True, exist_ok=True)
-            (root / home / 'AGENTS.md').write_text(f'Personal {home} guidance.\n')
+            if not (root / home / 'AGENTS.md').exists():
+                (root / home / 'AGENTS.md').write_text(f'Personal {home} guidance.\n')
         subprocess.run([sys.executable, str(PROJECT / 'scripts/install.py'), *flags, '--no-start',
                         '--codex', sys.executable, '--prefix', str(root / 'app'),
                         '--state-dir', str(root / 'state'), '--unit-dir', str(root / 'units'),
@@ -191,6 +192,35 @@ class InstallRecordTests(unittest.TestCase):
             record = self.install(root, '--configure-codex', '--configure-deepseek')
             self.assertEqual(record['participants'], ['codex', 'deepseek'])
             self.assertIn('dsh_home', record)
+
+    def test_sequential_installs_preserve_participants_and_uninstall_all_guidance(self):
+        for first, second in (('codex', 'deepseek'), ('deepseek', 'codex')):
+            with self.subTest(first=first), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                self.install(root, '--configure-' + first)
+                record = self.install(root, '--configure-' + second)
+                self.assertEqual(record['participants'], ['codex', 'deepseek'])
+                subprocess.run([sys.executable, str(root/'app/scripts/uninstall.py'),
+                                '--prefix', str(root/'app')], check=True, capture_output=True)
+                for home in ('codex', 'dsh'):
+                    self.assertEqual((root/home/'AGENTS.md').read_text(),
+                                     f'Personal {home} guidance.\n')
+
+    def test_legacy_record_and_omitted_homes_survive_reconfiguration(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            record = self.install(root, '--configure-codex')
+            del record['participants']
+            (root/'app/install.json').write_text(json.dumps(record))
+            subprocess.run([sys.executable, str(PROJECT/'scripts/install.py'),
+                            '--configure-deepseek', '--no-start', '--codex', sys.executable,
+                            '--prefix', str(root/'app'), '--state-dir', str(root/'state'),
+                            '--unit-dir', str(root/'units')], check=True, capture_output=True)
+            updated = json.loads((root/'app/install.json').read_text())
+            self.assertEqual(updated['participants'], ['codex', 'deepseek'])
+            self.assertEqual(updated['codex_home'], record['codex_home'])
+            self.assertEqual(updated['dsh_home'], record['dsh_home'])
+            self.assertIn('BEGIN DEEPSEEK PEER BRIDGE', (root/'dsh/AGENTS.md').read_text())
 
     def test_each_flag_writes_only_its_own_section(self):
         with tempfile.TemporaryDirectory() as temp:

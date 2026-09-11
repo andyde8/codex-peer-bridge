@@ -28,6 +28,9 @@ into a dated release section when promoted to `main`.
 
 ### Fixed
 
+- Repeated participant configuration preserves registered participants and home paths,
+  so uninstall removes all managed guidance, including after a Codex-only upgrade.
+
 - Harness notice delivery refuses redirects and ignores environment proxies to keep
   authentication cookies on the validated loopback destination.
 
