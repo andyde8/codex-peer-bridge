@@ -5,6 +5,13 @@ into a dated release section when promoted to `main`.
 
 ## Unreleased
 
+### Added
+
+- Generic peer-origin and permission-laundering guidance on inbox records, queued
+  notifications, and managed session instructions, separate from peer message content.
+- Updated inbox CLI adds guidance when reading from an older running bridge, allowing
+  current sessions to receive it without a server restart.
+
 ## 2026-09-11 — Codex-wide registration
 
 ### Added
