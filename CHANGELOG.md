@@ -28,6 +28,9 @@ into a dated release section when promoted to `main`.
 
 ### Fixed
 
+- Harness notice delivery refuses redirects and ignores environment proxies to keep
+  authentication cookies on the validated loopback destination.
+
 - `peers()` returned no peers on macOS. A missing `/proc/<pid>/stat` raised inside a broad
   handler, so discovery reported an empty list even with live peers present; the same
   omission made a notifier fail at startup and left `session.py status` permanently

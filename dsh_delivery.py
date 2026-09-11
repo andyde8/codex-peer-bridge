@@ -381,6 +381,13 @@ def request_body(session_id, text, timezone='UTC'):
                 'content': [{'type': 'text', 'text': text}], 'clientTimeZone': timezone}}}}
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never forward a harness credential beyond the validated destination."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def deliver(base, session_id, text, credentials=None, timeout=15, opener=None):
     """Queue one notice into a harness session.
 
@@ -414,7 +421,9 @@ def deliver(base, session_id, text, credentials=None, timeout=15, opener=None):
     # `localhost` commonly answers `::1` first on a host whose harness binds IPv4
     # only. Each attempt still goes to a pre-verified address, so the resolution
     # cannot be flipped between the check and the connection.
-    send = opener or urllib.request.urlopen
+    # Environment proxies and automatic redirects would bypass address validation.
+    send = opener or urllib.request.build_opener(
+        urllib.request.ProxyHandler({}), NoRedirect()).open
     last = None
     for address in addresses:
         host_text = f'[{address}]' if ':' in address else address

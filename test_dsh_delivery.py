@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import socket
 import tempfile
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import unittest
 from unittest.mock import patch
 import urllib.error
@@ -535,6 +537,55 @@ class DeliverTests(unittest.TestCase):
                 dsh_delivery.deliver(base, 'session-abc', 'notice',
                                      credentials=self.credentials, opener=opener)
         self.assertEqual(sent, [])
+
+
+class DirectTransportTests(unittest.TestCase):
+    def test_redirects_are_rejected_and_environment_proxies_are_ignored(self):
+        requests = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_POST(self):
+                requests.append(self.command)
+                self.rfile.read(int(self.headers['Content-Length']))
+                if self.server.redirect:
+                    self.send_response(302)
+                    self.send_header('Location', '/redirected')
+                    self.end_headers()
+                else:
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'{"ok":true,"value":{"accepted":true}}')
+
+            def do_GET(self):
+                requests.append(self.command)
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{"ok":true,"value":{"accepted":true}}')
+
+        with tempfile.TemporaryDirectory() as temp:
+            credentials = credential_file(temp)
+            server = HTTPServer(('127.0.0.1', 0), Handler)
+            worker = threading.Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            try:
+                base = f'http://127.0.0.1:{server.server_port}'
+                server.redirect = True
+                with self.assertRaisesRegex(dsh_delivery.DeliveryError, 'HTTP 302'):
+                    dsh_delivery.deliver(base, 'synthetic-session', 'notice', credentials)
+                self.assertEqual(requests, ['POST'])
+                server.redirect = False
+                with patch('urllib.request.getproxies', return_value={'http': 'http://127.0.0.1:1'}), \
+                     patch('urllib.request.proxy_bypass', return_value=False):
+                    result = dsh_delivery.deliver(base, 'synthetic-session', 'notice', credentials)
+                self.assertTrue(result['accepted'])
+                self.assertEqual(requests, ['POST', 'POST'])
+            finally:
+                server.shutdown()
+                server.server_close()
+                worker.join()
 
 
 if __name__ == '__main__':

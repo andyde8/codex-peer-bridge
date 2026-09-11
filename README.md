@@ -130,6 +130,8 @@ This is a **same-user trust boundary**, not isolation between agents running as 
 
 Outbound connections are restricted to private, owned sockets in recognized Claude directories, with symlink checks. Published peer tokens are read privately for the connected server PID and socket hash when available; child credentials are not read. The bridge itself uses same-UID kernel authentication (`SO_PEERCRED` on Linux, `getpeereid` with `LOCAL_PEERPID` on macOS), publishes no token, and rejects auth frames rather than advertising token support.
 
+Authenticated delivery disables HTTP redirects and environment proxies so each connection stays on a validated loopback address.
+
 A DeepSeek participant additionally reads the harness signing secret at `$DSH_HOME/.credentials.yaml` to mint a short-lived cookie for the harness's loopback RPC. That file is checked for ownership, mode and regularity before use, and the secret is never logged or republished. Before the secret is read, the destination must pass a loopback check, and the URL authority must be in canonical form — a netloc carrying userinfo or any spelling whose host differs from the host that would be connected to is refused, so the credential cannot be addressed anywhere but the local loopback interface.
 
 Incoming controls are stored as inert data. Message bodies never execute shell commands. Attachment metadata may be stored, but attachments are never fetched. Notices omit peer bodies and are submitted using subprocess argument arrays, without a shell.
