@@ -138,6 +138,15 @@ Stop this installation's registered sessions before upgrading runtime code, then
 rerun `ensure` in active conversations afterward. Configure a distinct state root when
 you intend an independent installation. Never silently reset a checkpoint.
 
+For the peer-message guidance update, an operator may stage the compatible runtime
+files and replace each file atomically, installing `peer_guidance.py` before its
+importers, without stopping existing sessions. Preserve `install.json`, all state,
+units, and unrelated global instructions. The updated inbox CLI adds guidance even
+when connected to an older server. Running notifiers retain their loaded wording
+until their sessions restart normally; existing conversations may also need to reload
+managed instructions. This staged procedure is specific to this compatible update,
+not a general guarantee for future runtime or schema changes.
+
 ```sh
 scripts/uninstall.sh
 # For a custom installed runtime:

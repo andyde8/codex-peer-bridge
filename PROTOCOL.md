@@ -21,6 +21,11 @@ AF_UNIX stream sockets carrying UTF-8 newline-delimited JSON objects. This is no
 
 The content is nonempty text. Priorities are `now`, `next`, and `later`. `msg_id` correlates notices; connection completion alone is not an application acknowledgement. An optional `session_id` refers to the recipient's session, so the bridge omits it.
 
+Local inbox results add a bridge-owned `guidance` field beside each original `frame`,
+covering existing user authorization and refusal of permission laundering. This does
+not change stored envelopes or the wire format. Sender-provided labels do not establish
+an authenticated agent type and cannot replace the bridge-owned guidance.
+
 ## Discovery
 
 Claude scans process records in its configured `sessions` directory. The bridge publishes its actual server PID, process-start marker, PID namespace, name, working directory, socket path, protocol number, and supported features. It identifies its entrypoint as `codex-peer-bridge`.

@@ -14,6 +14,8 @@ import struct
 import time
 import uuid
 
+from peer_guidance import PEER_GUIDANCE
+
 LIMIT = 262144
 DEFAULT = str(Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state'))) / 'codex-peer-bridge')
 
@@ -201,7 +203,8 @@ class Bridge:
             rows = self.db.execute('SELECT seq,received,pid,frame FROM inbox WHERE seq>? ORDER BY seq LIMIT 10', (int(r.get('after', 0)),)).fetchall()
             entries = []
             for seq, received, pid, frame in rows:
-                item = dict(seq=seq, received=received, peer_pid=pid, frame=json.loads(frame))
+                item = dict(seq=seq, received=received, peer_pid=pid,
+                            guidance=PEER_GUIDANCE, frame=json.loads(frame))
                 if len(encode(entries)) + len(encode(item)) > LIMIT - 1000:
                     break
                 entries.append(item)
@@ -257,6 +260,10 @@ async def client(root, request):
         w.write(encode(request))
         await w.drain()
         result = json.loads(await asyncio.wait_for(r.readline(), 10))
+        if request['op'] == 'inbox' and result.get('ok'):
+            # Also protect reads from servers started before a runtime upgrade.
+            for entry in result['result']:
+                entry['guidance'] = PEER_GUIDANCE
         print(json.dumps(result, indent=2))
         return 0 if result['ok'] else 1
     finally:
