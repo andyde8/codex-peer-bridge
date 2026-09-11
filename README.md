@@ -30,8 +30,15 @@ Verified with Codex CLI 0.154.0 and Claude Code 2.1.267: address delivery, repli
 
 ## Install and enable
 
-See [the installation guide](docs/INSTALL.md) for per-user services, selecting your
-Codex thread, persistent instructions, upgrades, and removal. For a manual trial:
+Configure Codex once so each session registers itself with its own inbox and peer name:
+
+```sh
+python3 scripts/install.py --configure-codex
+```
+
+See [the installation guide](docs/INSTALL.md) for managed global instructions,
+per-session services, the managed-process fallback, upgrades, and removal. Registration
+is instruction-driven, not a guaranteed startup hook. For a manual trial:
 
 ## Start
 
@@ -55,6 +62,7 @@ Claude peers can refresh their agent listing and send to `codex-project`. The re
 
 ```sh
 python3 bridge.py status
+python3 bridge.py peers
 python3 bridge.py inbox
 python3 bridge.py inbox --after 10
 python3 bridge.py send uds:/tmp/cc-socks/23456.sock 'Hello from Codex'
@@ -105,6 +113,10 @@ python3 -m unittest discover -v
 Tests cover fragmented and EOF-delimited messages, malformed and oversized input, inert controls, outgoing socket identity, persistent storage, local control requests, notification filtering, and checkpoints. CI runs on Linux with Python 3.11–3.13. Tests use synthetic peers and never message live Claude sessions.
 
 See [PROTOCOL.md](PROTOCOL.md) for the implemented wire format and discovery details.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history and pending changes.
 
 ## Contributing
 
