@@ -28,6 +28,9 @@ into a dated release section when promoted to `main`.
 
 ### Fixed
 
+- Repository setup requires the six OS/Python matrix checks, replacing obsolete
+  Python-only names that left pull requests waiting for nonexistent jobs.
+
 - Control socket paths use filesystem byte lengths, so Unicode state paths also
   select the short fallback before exceeding the kernel limit.
 
