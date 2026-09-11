@@ -102,6 +102,19 @@ class SocketPolicyTests(unittest.TestCase):
             self.assertEqual(deep.parent.resolve(), Path('/tmp/cc-socks').resolve())
             self.assertTrue(deep.name.endswith('-control.sock'))
 
+    def test_unicode_control_socket_paths_use_the_byte_limit(self):
+        # 63 characters but 108 UTF-8 bytes: too long on Linux and macOS.
+        root = Path('/tmp') / ('é' * 45)
+        direct = root / 'control.sock'
+        self.assertLess(len(str(direct)), 104)
+        self.assertGreaterEqual(len(os.fsencode(direct)), 108)
+        for darwin in (False, True):
+            with self.subTest(darwin=darwin), patch.object(platform_support, 'DARWIN', darwin):
+                chosen = platform_support.control_socket_path(root)
+                self.assertNotEqual(chosen, direct)
+                self.assertLess(len(os.fsencode(chosen)),
+                                platform_support.SUN_PATH_BYTES[darwin])
+
     def test_control_socket_fallback_is_unique_per_state_directory(self):
         with tempfile.TemporaryDirectory() as temp:
             first = platform_support.control_socket_path(Path(temp) / ('a' * 120))

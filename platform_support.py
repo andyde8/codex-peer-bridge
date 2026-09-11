@@ -230,7 +230,7 @@ def control_socket_path(root):
     accept queue refuses a connection on macOS just as a dead owner does.
     """
     direct = root / 'control.sock'
-    if len(str(direct)) < SUN_PATH_BYTES[DARWIN]:
+    if len(os.fsencode(direct)) < SUN_PATH_BYTES[DARWIN]:
         return direct
     digest = hashlib.sha256(str(Path(root).resolve()).encode()).hexdigest()[:16]
     return Path('/tmp/cc-socks') / f'{digest}-control.sock'

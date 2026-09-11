@@ -28,6 +28,9 @@ into a dated release section when promoted to `main`.
 
 ### Fixed
 
+- Control socket paths use filesystem byte lengths, so Unicode state paths also
+  select the short fallback before exceeding the kernel limit.
+
 - Repeated participant configuration preserves registered participants and home paths,
   so uninstall removes all managed guidance, including after a Codex-only upgrade.
 
