@@ -27,7 +27,7 @@ print(json.dumps({
             'require_last_push_approval': False, 'required_review_thread_resolution': True,
             'allowed_merge_methods': [method]}},
         {'type': 'required_status_checks', 'parameters': {
-            'strict_required_status_checks_policy': True,
+            'strict_required_status_checks_policy': branch == 'develop',
             'required_status_checks': [{'context': f'test ({v})'} for v in ('3.11','3.12','3.13')]}},
         {'type': 'non_fast_forward'}, {'type': 'deletion'}
     ]

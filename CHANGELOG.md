@@ -5,6 +5,11 @@ into a dated release section when promoted to `main`.
 
 ## Unreleased
 
+### Proposed
+
+- Align the main release up-to-date requirement with the squash-to-develop, merge-to-main
+  flow. This configuration change is pending maintainer approval; required tests remain.
+
 ## 2026-09-11 — Codex-wide registration
 
 ### Added

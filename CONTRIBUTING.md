@@ -45,6 +45,9 @@ gh pr create --base develop
 ```
 
 The maintainer promotes reviewed integration work with a PR from `develop` to `main`.
+Feature PRs must be current with `develop`. Release PRs require passing checks on the
+proposed merge, without requiring develop to absorb the preceding release merge commit
+from main. Applying that release rule requires maintainer approval.
 
 ## Commit conventions
 
