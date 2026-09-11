@@ -207,6 +207,11 @@ class RenameIdentityTests(unittest.TestCase):
     next `ensure` derives the delivery mechanism from them."""
 
     def session_command(self, app, *args, env):
+        # A restricted PATH keeps the probe for a user systemd manager failing, so
+        # `ensure` takes its manual_required path on every runner. Otherwise a host
+        # where `systemctl --user` answers but where starting a unit is impossible
+        # makes the outcome depend on the host rather than on the code under test.
+        env = dict(env, PATH='/nonexistent')
         return subprocess.run([sys.executable, str(app / 'session.py'), *args],
                               capture_output=True, text=True, check=True, env=env)
 
