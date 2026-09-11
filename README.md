@@ -38,7 +38,9 @@ python3 scripts/install.py --configure-codex
 
 See [the installation guide](docs/INSTALL.md) for managed global instructions,
 per-session services, the managed-process fallback, upgrades, and removal. Registration
-is instruction-driven, not a guaranteed startup hook. For a manual trial:
+is instruction-driven, not a guaranteed startup hook. Workspace sandboxes may require
+normal command approval to access per-user state and sockets; see the installation
+guide's permission troubleshooting. For a manual trial:
 
 ## Start
 

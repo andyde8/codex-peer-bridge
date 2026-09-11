@@ -1,3 +1,6 @@
+from contextlib import redirect_stdout
+import errno
+import io
 import json
 import os
 from pathlib import Path
@@ -11,6 +14,54 @@ from unittest.mock import patch
 from scripts.install import units
 
 class SessionTests(unittest.TestCase):
+    def test_permission_failure_before_registration(self):
+        for code in (errno.EACCES, errno.EPERM, errno.EROFS):
+            with self.subTest(code=code), tempfile.TemporaryDirectory() as d:
+                root=Path(d)/'state'
+                output=io.StringIO()
+                with patch.object(sys,'argv',['session.py','ensure','--thread','synthetic-thread']), \
+                     patch('session.read_config',return_value={'state_root':str(root)}), \
+                     patch('session.private_dir',side_effect=OSError(code,os.strerror(code),str(root))), \
+                     patch('session.subprocess.run') as run, redirect_stdout(output):
+                    self.assertEqual(session.main(),1)
+                data=json.loads(output.getvalue())
+                self.assertEqual(data['status'],'permission_required')
+                self.assertEqual(data['path'],str(root))
+                self.assertFalse(root.exists())
+                run.assert_not_called()
+
+    def test_unit_permission_failure_preserves_registration_for_retry(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d)
+            config={'state_root':str(root/'state'),'unit_dir':str(root/'units'),'codex':sys.executable}
+            output=io.StringIO()
+            with patch.object(sys,'argv',['session.py','ensure','--thread','synthetic-thread']), \
+                 patch('session.read_config',return_value=config), \
+                 patch('session.peers',return_value=[]), \
+                 patch('session.bridge_status',return_value=None), \
+                 patch('session.subprocess.run',return_value=subprocess.CompletedProcess([],0)) as run, \
+                 patch.object(Path,'write_text',side_effect=OSError(errno.EROFS,'Read-only file system',str(root/'units'))), \
+                 redirect_stdout(output):
+                self.assertEqual(session.main(),1)
+            self.assertEqual(json.loads(output.getvalue())['status'],'permission_required')
+            self.assertEqual(run.call_count,1)  # Probe only; no service start.
+            registration=root/'state/sessions'/session.identity('synthetic-thread')/'session.json'
+            saved=registration.read_bytes()
+            output=io.StringIO()
+            with patch.object(sys,'argv',['session.py','ensure','--thread','synthetic-thread']), \
+                 patch('session.read_config',return_value=config), \
+                 patch('session.bridge_status',return_value=None), \
+                 patch('session.subprocess.run',return_value=subprocess.CompletedProcess([],1)), \
+                 redirect_stdout(output):
+                self.assertEqual(session.main(),0)
+            self.assertEqual(json.loads(output.getvalue())['status'],'manual_required')
+            self.assertEqual(registration.read_bytes(),saved)
+
+    def test_other_os_errors_are_not_permission_failures(self):
+        with patch('session._main',side_effect=OSError(errno.ENOSPC,'No space left on device')):
+            with self.assertRaises(OSError):
+                session.main()
+
     def test_isolation_and_units(self):
         config={'state_root':'/state'}
         a=session.details(Path('/app'),config,'thread-a','/repo')

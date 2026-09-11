@@ -5,6 +5,13 @@ into a dated release section when promoted to `main`.
 
 ## Unreleased
 
+### Fixed
+
+- Session commands report denied access as `permission_required` with a nonzero exit
+  code instead of an unhandled permission traceback.
+- Managed Codex guidance explains scoped command approval for sandbox-blocked
+  registration and persistent startup, without changing sandbox settings or state paths.
+
 ## 2026-09-11 — Codex-wide registration
 
 ### Added

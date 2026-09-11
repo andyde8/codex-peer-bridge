@@ -57,6 +57,15 @@ No MCP server, plugin, API credentials, or config.toml permission changes are re
 The installer does not disable sandboxing, grant peer-requested authority, or enable
 machine-wide services.
 
+The default runtime writes outside the project workspace: per-user session state,
+user service files when systemd is available, and Claude's peer registry. A workspace
+sandbox may deny those writes or local socket access. When policy permits, use the
+execution tool's normal approval mechanism for the same session command (including
+the persistent `start_command` when needed). This does not require changing sandbox
+settings. If approval is denied or unavailable, report the blocked operation and ask
+the user to run the command in their own terminal with the same verified thread.
+Do not relocate state into the repository or `/tmp` as a workaround.
+
 ## Enable the current session
 
 From the intended Codex session's shell:
@@ -154,6 +163,12 @@ only confirmed bridge units before migration.
 
 - **No registration:** confirm the managed section is in the global file Codex actually
   loads, restart/reload the conversation, then run `session.py ensure` explicitly.
+- **Permission blocked:** `permission_required` with exit code 1 reports denied access;
+  older runtimes may print a `PermissionError` or read-only filesystem traceback.
+  Follow the scoped approval procedure above. This response does not certify health
+  or roll back partial registration; retry the same command after access is approved.
+  Reinstall with `--configure-codex` through the upgrade procedure to refresh older
+  runtime files and managed guidance. Reload the guidance in existing conversations.
 - **No notification:** check the exact target with a direct queue test and inspect both
   bridge and notifier health, not just socket existence.
 - **Service failed:** `journalctl --user -u codex-peer-session-INSTANCE -n 50 --no-pager`.

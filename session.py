@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Idempotent per-thread registration for Codex sessions."""
 import argparse
+import errno
 import fcntl
 import hashlib
 import json
@@ -155,7 +156,7 @@ def supervisor(prefix, config, state, thread, repo, name):
                         child.wait()
 
 
-def main():
+def _main():
     os.umask(0o077)
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('action',choices=['ensure','run','status','stop','rename'])
@@ -247,5 +248,27 @@ def main():
         supervisor(prefix,config,state,a.thread,repo,name)
 
 
+def main():
+    try:
+        _main()
+    except OSError as error:
+        if error.errno not in (errno.EACCES, errno.EPERM, errno.EROFS):
+            raise
+        # Report the boundary; never change paths or permissions to evade it.
+        print(json.dumps(dict(
+            status='permission_required',
+            error=error.strerror,
+            path=str(error.filename) if error.filename is not None else None,
+            guidance='The session command was denied filesystem or process access. '
+                     'If sandboxed and policy permits, retry the same command through '
+                     'the execution tool\'s normal approval mechanism. Otherwise report '
+                     'the blocked operation and request user action. Do not use sudo, '
+                     'change sandbox settings, or relocate session state. '
+                     'Registration health has not been verified.'
+        )))
+        return 1
+    return 0
+
+
 if __name__=='__main__':
-    main()
+    sys.exit(main())

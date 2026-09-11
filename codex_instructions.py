@@ -23,6 +23,15 @@ At the first opportunity in each Codex conversation with shell access, run:
 This uses the current CODEX_THREAD_ID, creates isolated state and a unique peer name,
 and reuses an already running instance. Never substitute another conversation's ID.
 If CODEX_THREAD_ID is absent, ask for the intended thread before registering.
+Registration writes per-user state outside the project and may need access to the
+user service manager, Claude registry, and local sockets. If permission_required,
+Permission denied, Operation not permitted, or Read-only file system is reported,
+retry the same command through the execution tool's normal approval mechanism when
+policy permits (for example, require_escalated). This is a scoped approval request,
+not a change to sandbox settings. Apply the same rule to the managed start_command.
+If approval is denied or unavailable, report the blocked operation and request user
+action; do not retry through alternate paths, move state into the repo or /tmp, or
+claim registration succeeded. Preserve the current thread when retrying.
 If the result is repair_required, run its repair_command, then rerun ensure.
 If the result is manual_required, run its exact start_command in a persistent managed
 shell session; keep that process alive while using the bridge. Do not use sudo or
